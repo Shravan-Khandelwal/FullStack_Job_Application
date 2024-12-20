@@ -37,6 +37,23 @@ const userSchema = new mongoose.Schema({
   CompanyName: {
     type: String,
   },
+  CompanyAppliedTo: [
+    {
+      JobId: {
+        type: String,
+        required: true,
+      },
+      Name: {
+        type: String,
+        required: true,
+      },
+      ApplicationResult: {
+        type: String,
+        enum: ["Selected", "Rejected", "Result Pending!"],
+        required: true,
+      },
+    },
+  ],
 });
 
 const userModel = mongoose.model("userModel", userSchema);
