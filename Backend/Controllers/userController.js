@@ -192,6 +192,25 @@ async function FindHRById(req, res) {
     return next(new Error("No User Is Present in the DB"));
   }
 }
+
+//! FUNCTION TO FETCH ALL THE LIST OF COMPANIES THE USER HAS APPLIED TO
+async function FetchCompaniesList(req, res) {
+  try {
+    const { id } = req.user;
+
+    const CrrUser = await userModel.findById(id);
+    
+    if (CrrUser) {
+      return res.status(200).json({
+        Msg: "List Of jobs User has Applied To Are:",
+        JobList: CrrUser.CompanyAppliedTo,
+      });
+    }
+  } catch (error) {
+    console.log(error.message);
+  }
+}
+
 module.exports = {
   createUser,
   logInUser,
@@ -199,4 +218,5 @@ module.exports = {
   getAllUsers,
   getCurrentUser,
   FindHRById,
+  FetchCompaniesList,
 };
