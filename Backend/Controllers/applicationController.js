@@ -61,7 +61,8 @@ async function postApplication(req, res, next) {
       !Email ||
       !applicantInfo ||
       !ManagerInfo ||
-      !Resume
+      !Resume ||
+      !jobId
     ) {
       return next(new Error("Enter All The Fields"));
     }
@@ -78,6 +79,7 @@ async function postApplication(req, res, next) {
         public_id: cloduinaryResponse.public_id,
         url: cloduinaryResponse.secure_url,
       },
+      JobId: jobId,
     });
 
     const CrrUser = await userModel.findById(req.user._id);
@@ -109,7 +111,7 @@ async function postApplication(req, res, next) {
 
       return res.status(200).json({
         Msg: "Job Applied successfully!",
-        updatedUser,
+        Application,
       });
     } catch (error) {
       console.error("Error saving job application:", error.message);
@@ -208,6 +210,21 @@ async function jobSeekerDeleteApplication(req, res, next) {
     return next(new Error("Job Application Not Found"));
   }
 
+  const AppliedByUserDetails = await userModel.findById(
+    jobApplication.applicantInfo.user.toString()
+  );
+
+  const FinalResult = "Rejected";
+
+  const AppliedToCompany = AppliedByUserDetails.CompanyAppliedTo.find(
+    (Job) => Job.JobId == jobApplication.JobId
+  );
+
+  if (AppliedToCompany) {
+    AppliedToCompany.ApplicationResult = FinalResult;
+    await AppliedByUserDetails.save();
+  }
+
   await jobApplication.deleteOne();
 
   return res.status(200).json({
@@ -218,21 +235,46 @@ async function jobSeekerDeleteApplication(req, res, next) {
 
 // ! Function To Accept The Job Application
 async function AcceptJobApplication(req, res, next) {
-  //! Check the Role of the user
-  const { Role } = req.user;
-  if (Role === "Job Seeker") {
-    return next(new Error("Unathorized for this functionality"));
-  }
+  try {
+    //! Check the Role of the user
+    const { Role } = req.user;
+    if (Role === "Job Seeker") {
+      return next(new Error("Unathorized for this functionality"));
+    }
 
-  const { id } = req.params;
-  if (!id) {
-    return next(new Error("Id Is Required"));
-  }
+    const { id } = req.params;
+    if (!id) {
+      return next(new Error("Id Is Required"));
+    }
 
-  const JobApplication = await applicationModel.findById(id);
+    const JobApplication = await applicationModel.findById(id);
 
-  if (!JobApplication) {
-    return next(new Error("Job Application Not Found"));
+    if (!JobApplication) {
+      return next(new Error("Job Application Not Found"));
+    }
+
+    const AppliedUserDetails = await userModel.findById(
+      JobApplication.applicantInfo.user.toString()
+    );
+
+    if (AppliedUserDetails) {
+      const AppliedToCompany = AppliedUserDetails.CompanyAppliedTo.find(
+        (Job) => Job.JobId == JobApplication.JobId
+      );
+
+      if (AppliedToCompany) {
+        AppliedToCompany.ApplicationResult = "Selected";
+        await AppliedUserDetails.save();
+        console.log(AppliedUserDetails);
+        await JobApplication.deleteOne();
+      }
+
+      return res.status(200).json({
+        Msg: "You Are Selected!!",
+      });
+    }
+  } catch (error) {
+    console.log(error.message);
   }
 }
 
