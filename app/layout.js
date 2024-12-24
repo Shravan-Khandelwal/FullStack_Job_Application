@@ -9,6 +9,9 @@ const dangrek = Dangrek({
   weight: "400", // You can adjust the weight if needed
 });
 
+
+
+
 // Metadata for the page
 export const metadata = {
   title: "Home Page",
